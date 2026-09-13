@@ -8,3 +8,13 @@ CREATE TABLE IF NOT EXISTS tasks (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     due_date DATETIME DEFAULT NULL
 );
+
+CREATE TRIGGER update_task_timestamp
+AFTER UPDATE ON tasks
+FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at OR OLD.updated_at is NULL
+BEGIN
+    UPDATE tasks
+    SET UPDATED_AT = CURRENT_TIMESTAMP
+    WHERE id = OLD.id;
+END;

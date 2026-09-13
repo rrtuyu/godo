@@ -19,7 +19,7 @@ func InitDb(ctx context.Context) *sql.DB {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	migrator := newMigrator(db)
 	if err := migrator.Run(); err != nil {
 		panic(err)

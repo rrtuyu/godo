@@ -14,7 +14,6 @@ var migrationFiles embed.FS
 const migrationDir = "migrations"
 const migrationTable = "schema_migrations"
 
-
 type Migrator struct {
 	db *sql.DB
 }
@@ -91,7 +90,7 @@ func (m *Migrator) inTransaction(fn func(tx *sql.Tx) error) error {
 		return err
 	}
 
-	defer func(){
+	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
 			panic(p)

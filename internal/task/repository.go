@@ -10,46 +10,50 @@ func NewTaskRepository(db *sql.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) create(t Task) (Task, error) {
-	query := "INSERT INTO tasks (parent_id, title, description, created_at, updated_at, completed, deadline) VALUES (?, ?, ?, ?, ?, ?)"
-	result, err := r.db.Exec(query, t.ParentID, t.Title, t.Description, t.CreatedAt, t.UpdatedAt, t.Completed, t.Deadline)
-	if err != nil {
-		return Task{}, err
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return Task{}, err
-	}
-
-	return Task{
-		ID:          id,
-		ParentID:    t.ParentID,
-		Title:       t.Title,
-		Description: t.Description,
-		CreatedAt:   t.CreatedAt,
-		UpdatedAt:   t.UpdatedAt,
-		Completed:   t.Completed,
-		Deadline:    t.Deadline,
-	}, nil
+type rowScanner interface {
+	Scan(dest ...any) error
 }
 
-func (r *TaskRepository) update(t Task) error {
-	query := "UPDATE tasks SET parent_id = ?, title = ?, description = ?, created_at = ?, updated_at = ?, completed = ?, deadline = ?, is_archived = ? WHERE id = ?"
-	_, err := r.db.Exec(query, t.ParentID, t.Title, t.Description, t.CreatedAt, t.UpdatedAt, t.Completed, t.Deadline, t.IsArchived, t.ID)
-	return err
-}
-
-func (r *TaskRepository) getByID(id int64) (Task, error) {
-	query := "SELECT * FROM tasks WHERE id = ?"
-	row := r.db.QueryRow(query, id)
-
+func scanTask(row rowScanner) (Task, error) {
 	var t Task
 	err := row.Scan(&t.ID, &t.ParentID, &t.Title, &t.Description, &t.CreatedAt, &t.UpdatedAt, &t.Completed, &t.Deadline, &t.IsArchived)
 	if err != nil {
 		return Task{}, err
 	}
 	return t, nil
+}
+
+func (r *TaskRepository) create(t Task) (Task, error) {
+	query := "INSERT INTO tasks (parent_id, title, description, completed, deadline) VALUES (?, ?, ?, ?, ?) RETURNING *"
+	row := r.db.QueryRow(query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline)
+	task, err := scanTask(row)
+	if err != nil {
+		return Task{}, err
+	}
+
+	return task, nil
+}
+
+func (r *TaskRepository) update(t Task) (Task, error) {
+	query := "UPDATE tasks SET parent_id = ?, title = ?, description = ?, completed = ?, deadline = ?, is_archived = ? WHERE id = ? RETURNING *"
+	row := r.db.QueryRow(query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline, t.IsArchived, t.ID)
+	task, err := scanTask(row)
+	if err != nil {
+		return Task{}, err
+	}
+
+	return task, nil
+}
+
+func (r *TaskRepository) getByID(id int64) (Task, error) {
+	query := "SELECT * FROM tasks WHERE id = ?"
+	row := r.db.QueryRow(query, id)
+
+	task, err := scanTask(row)
+	if err != nil {
+		return Task{}, err
+	}
+	return task, nil
 }
 
 func (r *TaskRepository) getAll() ([]Task, error) {
@@ -62,12 +66,11 @@ func (r *TaskRepository) getAll() ([]Task, error) {
 
 	var tasks []Task
 	for rows.Next() {
-		var t Task
-		err := rows.Scan(&t.ID, &t.ParentID, &t.Title, &t.Description, &t.CreatedAt, &t.UpdatedAt, &t.Completed, &t.Deadline, &t.IsArchived)
+		task, err := scanTask(rows)
 		if err != nil {
 			return nil, err
 		}
-		tasks = append(tasks, t)
+		tasks = append(tasks, task)
 	}
 
 	return tasks, nil
