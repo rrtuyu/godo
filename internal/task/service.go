@@ -36,25 +36,44 @@ func toTaskOutput(parentTask Task, subTasks []TaskOutput) TaskOutput {
 	}
 }
 
+func getTaskMaps(tasks []Task) (map[int64]Task, map[int64][]Task) {
+	// returns 2 maps
+	// 1st is Task by it's ID
+	// 2nd is Task list by it's ParentID
+	taskMap := make(map[int64]Task)
+	childreByParentMap := make(map[int64][]Task)
+	for _, t := range tasks {
+		taskMap[t.ID] = t
+		childreByParentMap[t.ParentID] = append(childreByParentMap[t.ParentID], t)
+	}
+	return taskMap, childreByParentMap
+}
+
 func (ts *TaskService) buildTaskTree(rootId int64) (TaskOutput, error) {
 	allTasks, err := ts.repo.getAll()
 	if err != nil {
 		return TaskOutput{}, nil
 	}
 
-	childrenByParent := make(map[int64][]Task)
-	taskById := make(map[int64]Task)
-
-	for _, t := range allTasks {
-		taskById[t.ID] = t
-		childrenByParent[t.ParentID] = append(childrenByParent[t.ParentID], t)
-	}
+	taskById, childrenByParent := getTaskMaps(allTasks)
 
 	root, ok := taskById[rootId]
 	if !ok {
 		return TaskOutput{}, sql.ErrNoRows
 	}
 	return assembleTree(root, childrenByParent), nil
+}
+
+func (ts *TaskService) buildAllTasks() ([]TaskOutput, error) {
+	allTasks, err := ts.repo.getAll()
+	if err != nil {
+		return nil, err
+	}
+
+	_, childrenByParent := getTaskMaps(allTasks)
+	outputTasks := assembleAlltasksTree(allTasks, childrenByParent)
+
+	return outputTasks, nil
 }
 
 func assembleTree(task Task, childrenByParent map[int64][]Task) TaskOutput {
@@ -66,6 +85,15 @@ func assembleTree(task Task, childrenByParent map[int64][]Task) TaskOutput {
 	}
 
 	return toTaskOutput(task, subOutPuts)
+}
+
+func assembleAlltasksTree(tasks []Task, childrenByParent map[int64][]Task) []TaskOutput {
+	var outputTasks []TaskOutput
+	for _, task := range tasks {
+		ot := assembleTree(task, childrenByParent)
+		outputTasks = append(outputTasks, ot)
+	}
+	return outputTasks
 }
 
 func (ts *TaskService) CreateTask(input TaskInput) (TaskOutput, error) {
@@ -95,8 +123,8 @@ func (ts *TaskService) GetTaskByID(id int64) (TaskOutput, error) {
 	return ts.buildTaskTree(id)
 }
 
-func (ts *TaskService) GetAllTasks() ([]Task, error) {
-	tasks, err := ts.repo.getAll()
+func (ts *TaskService) GetAllTasks() ([]TaskOutput, error) {
+	tasks, err := ts.buildAllTasks()
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +189,4 @@ func (ts *TaskService) MarkTaskIncomplete(id int64) error {
 		return err
 	}
 	return nil
-}
-
-func (ts *TaskService) GetSubTasks(parentId int64) ([]Task, error) {
-	tasks, err := ts.repo.getSubTasks(parentId)
-	if err != nil {
-		return nil, err
-	}
-	return tasks, nil
 }
