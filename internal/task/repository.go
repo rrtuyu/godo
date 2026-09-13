@@ -57,3 +57,12 @@ func (r *TaskRepository) delete(id int64) error {
 	_, err := r.db.Exec(query, id)
 	return err
 }
+
+func (r *TaskRepository) getSubTasks(parentId int64) ([]Task, error) {
+	var tasks []Task
+	query := "SELECT * FROM tasks WHERE parent_id = ?"
+	if err := r.db.Select(&tasks, query, parentId); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
