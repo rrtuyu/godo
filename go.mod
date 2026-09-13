@@ -3,6 +3,7 @@ module godo
 go 1.25.11
 
 require (
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/wailsapp/wails/v2 v2.15.0
 	modernc.org/sqlite v1.58.0
 )

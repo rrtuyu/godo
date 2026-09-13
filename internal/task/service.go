@@ -1,14 +1,14 @@
 package task
 
 import (
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 )
 
 type TaskService struct {
 	repo *TaskRepository
 }
 
-func NewTaskService(db *sql.DB) *TaskService {
+func NewTaskService(db *sqlx.DB) *TaskService {
 	return &TaskService{
 		repo: NewTaskRepository(db),
 	}

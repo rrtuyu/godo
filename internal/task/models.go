@@ -11,9 +11,3 @@ type Task struct {
 	Deadline    string `db:"deadline" json:"deadline"`
 	IsArchived  bool   `db:"is_archived" json:"is_archived"`
 }
-
-// TODO rethink necceserity of this model, maybe just use Task and add a ParentID field to it
-type SubTask struct {
-	Task
-	ParentID int64 `db:"parent_id" json:"parent_id"`
-}

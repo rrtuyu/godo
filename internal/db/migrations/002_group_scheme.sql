@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS group_task (
+    group_id INTEGER NOT NULL,
+    task_id INTEGER NOT NULL,
+    PRIMARY KEY (group_id, task_id),
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);

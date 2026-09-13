@@ -1,11 +1,12 @@
 package db
 
 import (
-	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
 	"sort"
+
+	"github.com/jmoiron/sqlx"
 )
 
 //go:embed migrations/*.sql
@@ -15,10 +16,10 @@ const migrationDir = "migrations"
 const migrationTable = "schema_migrations"
 
 type Migrator struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func newMigrator(db *sql.DB) *Migrator {
+func newMigrator(db *sqlx.DB) *Migrator {
 	return &Migrator{db: db}
 }
 
@@ -64,7 +65,7 @@ func (m *Migrator) Run() error {
 			return err
 		}
 
-		err = m.inTransaction(func(tx *sql.Tx) error {
+		err = m.inTransaction(func(tx *sqlx.Tx) error {
 			if _, err := tx.Exec(string(content)); err != nil {
 				return fmt.Errorf("execute SQL error: %w", err)
 			}
@@ -84,8 +85,8 @@ func (m *Migrator) Run() error {
 	return nil
 }
 
-func (m *Migrator) inTransaction(fn func(tx *sql.Tx) error) error {
-	tx, err := m.db.Begin()
+func (m *Migrator) inTransaction(fn func(tx *sqlx.Tx) error) error {
+	tx, err := m.db.Beginx()
 	if err != nil {
 		return err
 	}

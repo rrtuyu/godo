@@ -1,32 +1,19 @@
 package task
 
-import "database/sql"
+import "github.com/jmoiron/sqlx"
 
 type TaskRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewTaskRepository(db *sql.DB) *TaskRepository {
+func NewTaskRepository(db *sqlx.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-type rowScanner interface {
-	Scan(dest ...any) error
-}
-
-func scanTask(row rowScanner) (Task, error) {
-	var t Task
-	err := row.Scan(&t.ID, &t.ParentID, &t.Title, &t.Description, &t.CreatedAt, &t.UpdatedAt, &t.Completed, &t.Deadline, &t.IsArchived)
-	if err != nil {
-		return Task{}, err
-	}
-	return t, nil
-}
-
 func (r *TaskRepository) create(t Task) (Task, error) {
+	var task Task
 	query := "INSERT INTO tasks (parent_id, title, description, completed, deadline) VALUES (?, ?, ?, ?, ?) RETURNING *"
-	row := r.db.QueryRow(query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline)
-	task, err := scanTask(row)
+	err := r.db.Get(&task, query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline)
 	if err != nil {
 		return Task{}, err
 	}
@@ -35,9 +22,9 @@ func (r *TaskRepository) create(t Task) (Task, error) {
 }
 
 func (r *TaskRepository) update(t Task) (Task, error) {
+	var task Task
 	query := "UPDATE tasks SET parent_id = ?, title = ?, description = ?, completed = ?, deadline = ?, is_archived = ? WHERE id = ? RETURNING *"
-	row := r.db.QueryRow(query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline, t.IsArchived, t.ID)
-	task, err := scanTask(row)
+	err := r.db.Get(&task, query, t.ParentID, t.Title, t.Description, t.Completed, t.Deadline, t.IsArchived, t.ID)
 	if err != nil {
 		return Task{}, err
 	}
@@ -46,10 +33,9 @@ func (r *TaskRepository) update(t Task) (Task, error) {
 }
 
 func (r *TaskRepository) getByID(id int64) (Task, error) {
+	var task Task
 	query := "SELECT * FROM tasks WHERE id = ?"
-	row := r.db.QueryRow(query, id)
-
-	task, err := scanTask(row)
+	err := r.db.Get(&task, query, id)
 	if err != nil {
 		return Task{}, err
 	}
@@ -57,22 +43,12 @@ func (r *TaskRepository) getByID(id int64) (Task, error) {
 }
 
 func (r *TaskRepository) getAll() ([]Task, error) {
+	var tasks []Task
 	query := "SELECT * FROM tasks"
-	rows, err := r.db.Query(query)
+	err := r.db.Select(&tasks, query)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var tasks []Task
-	for rows.Next() {
-		task, err := scanTask(rows)
-		if err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-
 	return tasks, nil
 }
 

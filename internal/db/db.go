@@ -2,15 +2,15 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"path/filepath"
 
+	"github.com/jmoiron/sqlx"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	_ "modernc.org/sqlite"
 )
 
-func InitDb(ctx context.Context) *sql.DB {
-	db, err := sql.Open("sqlite", "test.db")
+func InitDb(ctx context.Context) *sqlx.DB {
+	db, err := sqlx.Open("sqlite", "test.db")
 	if err != nil {
 		panic(err)
 	}

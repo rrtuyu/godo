@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+
+	"github.com/jmoiron/sqlx"
 
 	"godo/internal/db"
 
@@ -14,7 +15,7 @@ import (
 type App struct {
 	ctx context.Context
 
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewApp creates a new App application struct
