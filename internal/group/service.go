@@ -49,8 +49,8 @@ func (gs *GroupService) DeleteGroup(id int64) error {
 	return nil
 }
 
-func (gs *GroupService) AddTaskToGroup(taskId int64, groupId int64) error {
-	if err := gs.repo.addTaskToGroup(taskId, groupId); err != nil {
+func (gs *GroupService) AddTaskToGroup(taskID int64, groupID int64) error {
+	if err := gs.repo.addTaskToGroup(taskID, groupID); err != nil {
 		return err
 	}
 	return nil

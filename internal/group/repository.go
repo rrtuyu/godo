@@ -74,14 +74,14 @@ func (r *GroupRepository) delete(id int64) error {
 	return err
 }
 
-func (r *GroupRepository) addTaskToGroup(taskId int64, groupId int64) error {
+func (r *GroupRepository) addTaskToGroup(taskID int64, groupID int64) error {
 	query := "INSERT INTO group_task (group_id, task_id) VALUES (?, ?)"
-	_, err := r.db.Exec(query, groupId, taskId)
+	_, err := r.db.Exec(query, groupID, taskID)
 	return err
 }
 
-func (r *GroupRepository) removeTaskFromGroup(taskId int64, groupId int64) error {
+func (r *GroupRepository) removeTaskFromGroup(taskID int64, groupID int64) error {
 	query := "DELETE FROM group_task WHERE group_id = ? AND task_id = ?"
-	_, err := r.db.Exec(query, groupId, taskId)
+	_, err := r.db.Exec(query, groupID, taskID)
 	return err
 }
