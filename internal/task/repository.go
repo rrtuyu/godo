@@ -58,10 +58,19 @@ func (r *TaskRepository) delete(id int64) error {
 	return err
 }
 
-func (r *TaskRepository) getSubTasks(parentId int64) ([]Task, error) {
+func (r *TaskRepository) getSubTasks(parentID int64) ([]Task, error) {
 	var tasks []Task
 	query := "SELECT * FROM tasks WHERE parent_id = ?"
-	if err := r.db.Select(&tasks, query, parentId); err != nil {
+	if err := r.db.Select(&tasks, query, parentID); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (r *TaskRepository) getByGroupID(groupID int64) ([]Task, error) {
+	var tasks []Task
+	query := "SELECT t.* FROM tasks JOIN group_task gt ON t.id = gt.task_id WHERE gt.group_id = ?"
+	if err := r.db.Select(&tasks, query, groupID); err != nil {
 		return nil, err
 	}
 	return tasks, nil

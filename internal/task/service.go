@@ -64,17 +64,36 @@ func (ts *TaskService) buildTaskTree(rootId int64) (TaskOutput, error) {
 	return assembleTree(root, childrenByParent), nil
 }
 
-func (ts *TaskService) buildAllTasks() ([]TaskOutput, error) {
+func (ts *TaskService) buildTaskForest(filterIDs []int64) ([]TaskOutput, error) {
 	allTasks, err := ts.repo.getAll()
 	if err != nil {
 		return nil, err
 	}
 
 	_, childrenByParent := getTaskMaps(allTasks)
-	outputTasks := assembleAlltasksTree(allTasks, childrenByParent)
+	roots := childrenByParent[0]
 
-	return outputTasks, nil
+	if filterIDs != nil {
+		filterSet := make(map[int64]struct{}, len(filterIDs))
+		for _, id := range filterIDs {
+			filterSet[id] = struct{}{}
+		}
+		filtered := make([]Task, 0, len(roots))
+		for _, r := range roots {
+			if _, ok := filterSet[r.ID]; ok {
+				filtered = append(filtered, r)
+			}
+		}
+		roots = filtered
+	}
+
+	forest := make([]TaskOutput, 0, len(roots))
+	for _, root := range roots {
+		forest = append(forest, assembleTree(root, childrenByParent))
+	}
+	return forest, nil
 }
+
 
 func assembleTree(task Task, childrenByParent map[int64][]Task) TaskOutput {
 	children := childrenByParent[task.ID]
@@ -124,7 +143,7 @@ func (ts *TaskService) GetTaskByID(id int64) (TaskOutput, error) {
 }
 
 func (ts *TaskService) GetAllTasks() ([]TaskOutput, error) {
-	tasks, err := ts.buildAllTasks()
+	tasks, err := ts.buildTaskForest(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -189,4 +208,23 @@ func (ts *TaskService) MarkTaskIncomplete(id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (ts *TaskService) GetTasksByGroup(groupID int64) ([]TaskOutput, error) {
+	tasks, err := ts.repo.getByGroupID(groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	taskIDs := make([]int64, len(tasks))
+	for i, t := range tasks {
+		taskIDs[i] = t.ID
+	}
+
+	taskOutputs, err := ts.buildTaskForest(taskIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return taskOutputs, nil
 }
